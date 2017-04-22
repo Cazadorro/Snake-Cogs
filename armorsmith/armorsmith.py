@@ -239,7 +239,7 @@ class Store:
             ))
 
     def list_items(self):
-        description = "What're ya buyin', PEN ISLAND traveler?" + scu.description
+        description = "What're ya buyin', PEN ISLAND traveler?"
         embed = discord.Embed(colour=0xFF0000, description=description)
         embed.title = "Item Shop"
         embed.set_author(name="Shopkeep", icon_url="http://imgur.com/zFYAFVg.jpg")
