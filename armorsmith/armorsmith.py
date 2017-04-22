@@ -9,7 +9,7 @@ from __main__ import send_cmd_help
 from .utils import checks
 import logging
 import os
-import ../snakecogutils
+
 
 
 class ArmorException(Exception):
