@@ -310,11 +310,27 @@ def create_file_if_none(file_path):
         dataIO.save_json(file_path, {})
 
 
+def create_logging(log_name, log_directory, log_file):
+    global logger
+    logger = logging.getLogger(log_name)
+    create_folder_if_none(log_directory)
+    log_file_path = log_directory + "/" + log_file
+    create_file_if_none(log_file_path)
+    if logger.level == 0:
+        # Prevents the logger from being loaded again in case of module reload
+        logger.setLevel(logging.INFO)
+        handler = logging.FileHandler(filename=log_file_path,
+                                      encoding='utf-8', mode='a')
+        handler.setFormatter(logging.Formatter('%(asctime)s %(message)s',
+                                               datefmt="[%d/%m/%Y %H:%M]"))
+        logger.addHandler(handler)
+
+
 class Vault:
     def __init__(self, bot):
         self.bot = bot
         self.InvalidTransactionException = InvalidTransactionException
-        self.cog_list = ['a', 'b']
+        self.cog_list = []
 
     def get_vault(self, vault_path, folder_path, file_path, cogID):
         self.cog_list.append(cogID)
@@ -335,20 +351,10 @@ class Vault:
     @_vault.command(pass_context=True, no_pm=True)
     async def listcogs(self, ctx):
         """lists cogs currently using this vault"""
+        print("hello")
         await self.bot.say(("current cogs using vault: " + str(self.cog_list)))
 
 
 def setup(bot):
-    global logger
-    logger = logging.getLogger("red.vault")
-    create_folder_if_none('data/vault')
-    create_file_if_none('data/vault/vaultlogger.log')
-    if logger.level == 0:
-        # Prevents the logger from being loaded again in case of module reload
-        logger.setLevel(logging.INFO)
-        handler = logging.FileHandler(filename='data/vault/vaultlogger.log',
-                                      encoding='utf-8', mode='a')
-        handler.setFormatter(logging.Formatter('%(asctime)s %(message)s',
-                                               datefmt="[%d/%m/%Y %H:%M]"))
-        logger.addHandler(handler)
+    create_logging("red.vault", "data/vault", "vaultlogger.log")
     bot.add_cog(Vault(bot))

@@ -1,0 +1,13 @@
+{
+  "AUTHOR": "Cazadorro",
+  "SHORT": "Generic Vault cog for storing arbitrary data (money, items etc...)",
+  "DESCRIPTION": "creates a json structure of {servers...{users...{accounts...{metadata, storage}}}}, allows cogs to create personal vaults through 'get_vault'",
+  "DISABLED": false,
+  "NAME": "Vault",
+  "TAGS": [
+    "Vault",
+    "storage",
+    "accounts"
+  ],
+  "INSTALL_MSG": "Installed Vault, any vault Cogs which have dependencies on Vault can now be used"
+}
