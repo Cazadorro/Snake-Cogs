@@ -314,7 +314,7 @@ class Vault:
     def __init__(self, bot):
         self.bot = bot
         self.InvalidTransactionException = InvalidTransactionException
-        self.cog_list
+        self.cog_list = []
 
     def get_vault(self, vault_path, folder_path, file_path, cogID):
         self.cog_list.append(cogID)
