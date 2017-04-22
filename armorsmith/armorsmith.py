@@ -239,7 +239,7 @@ class Store:
             ))
 
     def list_items(self):
-
+        print(self.bot.cogs)
         for cogname in self.dependencies:
             self.bot.get_cog("Owner")._load_cog("cogs."+cogname)
         description = "What're ya buyin', PEN ISLAND traveler?" + self.bot.get_cog("cogs."+"snakecogutils").description
