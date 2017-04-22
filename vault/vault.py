@@ -314,7 +314,7 @@ class Vault:
     def __init__(self, bot):
         self.bot = bot
         self.InvalidTransactionException = InvalidTransactionException
-        self.cog_list = []
+        self.cog_list = ['a', 'b']
 
     def get_vault(self, vault_path, folder_path, file_path, cogID):
         self.cog_list.append(cogID)
@@ -335,7 +335,7 @@ class Vault:
     @_vault.command(pass_context=True, no_pm=True)
     async def coglist(self, ctx):
         """lists cogs currently using this vault"""
-        await self.bot.say(("current cogs using vault" + str(self.coglist)))
+        await self.bot.say(("current cogs using vault: " + str(self.coglist)))
 
 
 def setup(bot):
