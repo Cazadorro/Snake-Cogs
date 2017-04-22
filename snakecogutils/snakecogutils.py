@@ -17,6 +17,7 @@ description = "What're ya buyin', PEN ISLAND traveler?"
 class TestBot:
     def __init__(self, bot):
         self.bot = bot
+        self.description = "Wasdf"
 
     @commands.group(name="testicular", pass_context=True)
     async def _testicular(self, ctx):
@@ -29,6 +30,7 @@ class TestBot:
         """Registers an inventory with the Armorsmith."""
         author = ctx.message.author
         await self.bot.say("test message")
+
 
 
 def setup(bot):
