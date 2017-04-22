@@ -239,10 +239,10 @@ class Store:
             ))
 
     def list_items(self):
-        print(self.bot.cogs)
+        self.bot.say(str(self.bot.cogs))
         for cogname in self.dependencies:
             self.bot.get_cog("Owner")._load_cog("cogs."+cogname)
-        description = "What're ya buyin', PEN ISLAND traveler?" + self.bot.get_cog("cogs."+"snakecogutils").description
+        description = "What're ya buyin', PEN ISLAND traveler?" + self.bot.get_cog("TestBot").description
         embed = discord.Embed(colour=0xFF0000, description=description)
         embed.title = "Item Shop"
         embed.set_author(name="Shopkeep", icon_url="http://imgur.com/zFYAFVg.jpg")
