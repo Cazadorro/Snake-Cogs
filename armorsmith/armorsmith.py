@@ -215,6 +215,7 @@ class Store:
                           "armor": [],
                           "potions": []}
         self._generate_inventory()
+        self.dependencies = ["snakecogutils"]
 
     def _generate_inventory(self):
         item_list = dataIO.load_json(self.file_path)
@@ -238,7 +239,10 @@ class Store:
             ))
 
     def list_items(self):
-        description = "What're ya buyin', PEN ISLAND traveler?"
+
+        for cogname in self.dependencies:
+            self.bot.get_cog("owner")._load_cog(cogname)
+        description = "What're ya buyin', PEN ISLAND traveler?" + self.bot.get_cog("snakecogutils").description
         embed = discord.Embed(colour=0xFF0000, description=description)
         embed.title = "Item Shop"
         embed.set_author(name="Shopkeep", icon_url="http://imgur.com/zFYAFVg.jpg")
