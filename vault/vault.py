@@ -335,7 +335,7 @@ class Vault:
     @_vault.command(pass_context=True, no_pm=True)
     async def coglist(self, ctx):
         """lists cogs currently using this vault"""
-        await self.bot.say("current cogs using vault", str(self.coglist))
+        await self.bot.say(("current cogs using vault" + str(self.coglist)))
 
 
 def setup(bot):
