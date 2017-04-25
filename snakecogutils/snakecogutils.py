@@ -46,6 +46,7 @@ class TestBot:
                 x = None
                 index = 0
                 while index < 100:
+                    await self.bot.say("Index : " + str(index))
                     index += 1
                     try:
                         x = voice_client.socket.recvfrom(128)
