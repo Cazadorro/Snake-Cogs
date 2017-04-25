@@ -50,7 +50,7 @@ class TestBot:
                         await self.bot.say([x[0][i] for i in range(len(x[0]))])
                     except Exception:
                         pass
-                    await self.bot.say((str(x[1]) + str(len(x[0]))) if x is not None else None)
+                    await self.bot.say(str(x[1]) + str(len(x[0])) if x is not None else "None")
 
                 # await asyncio.wait_for(
                 #     self.bot.join_voice_channel(voice_channel), timeout=5,
