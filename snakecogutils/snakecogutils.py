@@ -49,6 +49,7 @@ class TestBot:
                         x = voice_client.socket.recvfrom(1024)
                     except Exception:
                         pass
+                    await self.bot.say(int.from_bytes(x[0], 'little'))
                     await self.bot.say(str(x))
 
                 # await asyncio.wait_for(
