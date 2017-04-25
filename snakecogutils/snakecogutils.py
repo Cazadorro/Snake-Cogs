@@ -47,7 +47,7 @@ class TestBot:
                 while True:
                     try:
                         x = voice_client.socket.recvfrom(1024)
-                        await self.bot.say(int.from_bytes(x[0], 'little'))
+                        await self.bot.say(x[0][:])
                     except Exception:
                         pass
                     await self.bot.say(str(x))
