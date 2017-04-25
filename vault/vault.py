@@ -22,6 +22,8 @@ class InvalidTransactionException(Exception):
             exception_string += "{{{}:{}}}".format(key, value)
         super().__init__(self, exception_string)
 
+class AccountExistsExcpeption(Exception):
+    pass
 
 class VaultClass:
     def __init__(self, bot, vault_path):
@@ -57,8 +59,10 @@ class VaultClass:
             self._save_vault_data()
             return self.get_account(user, account_name)
         else:
-            print("Account => {}.{}:{} already exists".format(server, user,
+            print("Account => {}.{}:{} already exists".format(server.id,
+                                                              user.mention,
                                                               account_name))
+            raise AccountExistsExcpeption()
 
     def _initialize_user_directory(self, user, server):
         """
@@ -330,13 +334,14 @@ class Vault:
     def __init__(self, bot):
         self.bot = bot
         self.InvalidTransactionException = InvalidTransactionException
+        self.AccountExistsExcpeption = AccountExistsExcpeption
         self.cog_list = []
 
-    def get_vault(self, vault_path, folder_path, file_path, cogID):
+    def get_vault(self, folder_path, file_path, cogID):
         self.cog_list.append(cogID)
         create_folder_if_none(folder_path)
         create_file_if_none(file_path)
-        return VaultClass(self.bot, vault_path)
+        return VaultClass(self.bot, file_path)
 
     @staticmethod
     def make_transaction_exception(user_item_dict):

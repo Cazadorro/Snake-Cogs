@@ -45,14 +45,21 @@ class Bank:
         global default_settings
         self.bot = bot
         self.bank = Bank(bot, "data/economy/bank.json")
-        self.file_path = "data/economy/settings.json"
-        self.settings = dataIO.load_json(self.file_path)
-        if "PAYDAY_TIME" in self.settings:  # old format
-            default_settings = self.settings
-            self.settings = {}
+        self.vault_path = "data/vault/bank.json"
+        self.vault_directory = "data/vault"
+        self.vault = bot.get_cog("Vault").get_vault(self.vault_directory,
+                                                    self.vault_path,
+                                                    "Bank")
+        self.settings_path = self.vault_directory + "/bank_settings.json"
+        self.settings = dataIO.load_json(self.settings_path)
         self.settings = defaultdict(lambda: default_settings, self.settings)
         self.payday_register = defaultdict(dict)
         self.slot_register = defaultdict(dict)
+        self.account_name = "basic_bank_account"
+
+    def _get_balance(self, user):
+        return self.vault.get_account(user, self.account_name)["storage"][
+            "balance"]
 
     @commands.group(name="bank", pass_context=True)
     async def _bank(self, ctx):
@@ -63,29 +70,27 @@ class Bank:
     @_bank.command(pass_context=True, no_pm=True)
     async def register(self, ctx):
         """Registers an account at the Twentysix bank"""
-        settings = self.settings[ctx.message.server.id]
+        settings = self.settings.get(ctx.message.server.id, {})
         author = ctx.message.author
-        credits = 0
-        if ctx.message.server.id in self.settings:
-            credits = settings.get("REGISTER_CREDITS", 0)
-        try:
-            account = self.bank.create_account(author, initial_balance=credits)
-            await self.bot.say("{} Account opened. Current balance: {}"
-                               "".format(author.mention, account.balance))
-        except AccountAlreadyExists:
-            await self.bot.say("{} You already have an account at the"
-                               " Twentysix bank.".format(author.mention))
+        balance = settings.get("REGISTER_CREDITS", 0)
+        metadata = {"id": author.id, "permissionlevel": 0}
+        storage = {"balance": balance}
+        account = self.vault.create_account(author, self.account_name, metadata,
+                                            storage)
+        await self.bot.say("{} Account opened. Current balance: {}"
+                           "".format(author.mention,
+                                     account["storage"]["balance"]))
 
     @_bank.command(pass_context=True)
-    async def balance(self, ctx, user: discord.Member=None):
+    async def balance(self, ctx, user: discord.Member = None):
         """Shows balance of user.
         Defaults to yours."""
         if not user:
             user = ctx.message.author
             try:
                 await self.bot.say("{} Your balance is: {}".format(
-                    user.mention, self.bank.get_balance(user)))
-            except NoAccount:
+                    user.mention, self._get_balance(user)))
+            except self.vault.AccountExistsExcpeption:
                 await self.bot.say("{} You don't have an account at the"
                                    " Twentysix bank. Type `{}bank register`"
                                    " to open one.".format(user.mention,
@@ -93,9 +98,11 @@ class Bank:
         else:
             try:
                 await self.bot.say("{}'s balance is {}".format(
-                    user.name, self.bank.get_balance(user)))
-            except NoAccount:
+                    user.name, self._get_balance(user)))
+            except self.vault.AccountExistsExcpeption:
                 await self.bot.say("That user has no bank account.")
+
+    _transfer
 
     @_bank.command(pass_context=True)
     async def transfer(self, ctx, user: discord.Member, sum: int):
@@ -153,7 +160,7 @@ class Bank:
 
     @_bank.command(pass_context=True, no_pm=True)
     @checks.serverowner_or_permissions(administrator=True)
-    async def reset(self, ctx, confirmation: bool=False):
+    async def reset(self, ctx, confirmation: bool = False):
         """Deletes all server's bank accounts"""
         if confirmation is False:
             await self.bot.say("This will delete all bank accounts on "
@@ -173,10 +180,10 @@ class Bank:
         if self.bank.account_exists(author):
             if id in self.payday_register[server.id]:
                 seconds = abs(self.payday_register[server.id][
-                              id] - int(time.perf_counter()))
+                                  id] - int(time.perf_counter()))
                 if seconds >= self.settings[server.id]["PAYDAY_TIME"]:
                     self.bank.deposit_credits(author, self.settings[
-                                              server.id]["PAYDAY_CREDITS"])
+                        server.id]["PAYDAY_CREDITS"])
                     self.payday_register[server.id][
                         id] = int(time.perf_counter())
                     await self.bot.say(
@@ -193,7 +200,7 @@ class Bank:
             else:
                 self.payday_register[server.id][id] = int(time.perf_counter())
                 self.bank.deposit_credits(author, self.settings[
-                                          server.id]["PAYDAY_CREDITS"])
+                    server.id]["PAYDAY_CREDITS"])
                 await self.bot.say(
                     "{} Here, take some credits. Enjoy! (+{} credits!)".format(
                         author.mention,
@@ -201,7 +208,7 @@ class Bank:
         else:
             await self.bot.say("{} You need an account to receive credits."
                                " Type `{}bank register` to open one.".format(
-                                   author.mention, ctx.prefix))
+                author.mention, ctx.prefix))
 
     @commands.group(pass_context=True)
     async def leaderboard(self, ctx):
@@ -211,7 +218,7 @@ class Bank:
             await ctx.invoke(self._server_leaderboard)
 
     @leaderboard.command(name="server", pass_context=True)
-    async def _server_leaderboard(self, ctx, top: int=10):
+    async def _server_leaderboard(self, ctx, top: int = 10):
         """Prints out the server's leaderboard
         Defaults to top 10"""
         # Originally coded by Airenkun - edited by irdumb
@@ -220,7 +227,8 @@ class Bank:
             top = 10
         bank_sorted = sorted(self.bank.get_server_accounts(server),
                              key=lambda x: x.balance, reverse=True)
-        bank_sorted = [a for a in bank_sorted if a.member] #  exclude users who left
+        bank_sorted = [a for a in bank_sorted if
+                       a.member]  # exclude users who left
         if len(bank_sorted) < top:
             top = len(bank_sorted)
         topten = bank_sorted[:top]
@@ -228,7 +236,8 @@ class Bank:
         place = 1
         for acc in topten:
             highscore += str(place).ljust(len(str(top)) + 1)
-            highscore += (str(acc.member.display_name) + " ").ljust(23 - len(str(acc.balance)))
+            highscore += (str(acc.member.display_name) + " ").ljust(
+                23 - len(str(acc.balance)))
             highscore += str(acc.balance) + "\n"
             place += 1
         if highscore != "":
@@ -238,14 +247,15 @@ class Bank:
             await self.bot.say("There are no accounts in the bank.")
 
     @leaderboard.command(name="global")
-    async def _global_leaderboard(self, top: int=10):
+    async def _global_leaderboard(self, top: int = 10):
         """Prints out the global leaderboard
         Defaults to top 10"""
         if top < 1:
             top = 10
         bank_sorted = sorted(self.bank.get_all_accounts(),
                              key=lambda x: x.balance, reverse=True)
-        bank_sorted = [a for a in bank_sorted if a.member] #  exclude users who left
+        bank_sorted = [a for a in bank_sorted if
+                       a.member]  # exclude users who left
         unique_accounts = []
         for acc in bank_sorted:
             if not self.already_in_list(unique_accounts, acc):
@@ -317,15 +327,15 @@ class Bank:
         reels = []
         self.slot_register[author.id] = datetime.utcnow()
         for i in range(3):
-            default_reel.rotate(random.randint(-999, 999)) # weeeeee
-            new_reel = deque(default_reel, maxlen=3) # we need only 3 symbols
-            reels.append(new_reel)                   # for each reel
+            default_reel.rotate(random.randint(-999, 999))  # weeeeee
+            new_reel = deque(default_reel, maxlen=3)  # we need only 3 symbols
+            reels.append(new_reel)  # for each reel
         rows = ((reels[0][0], reels[1][0], reels[2][0]),
                 (reels[0][1], reels[1][1], reels[2][1]),
                 (reels[0][2], reels[1][2], reels[2][2]))
 
-        slot = "~~\n~~" # Mobile friendly
-        for i, row in enumerate(rows): # Let's build the slot to show
+        slot = "~~\n~~"  # Mobile friendly
+        for i, row in enumerate(rows):  # Let's build the slot to show
             sign = "  "
             if i == 1:
                 sign = ">"
@@ -335,8 +345,8 @@ class Bank:
         if not payout:
             # Checks for two-consecutive-symbols special rewards
             payout = PAYOUTS.get((rows[1][0], rows[1][1]),
-                     PAYOUTS.get((rows[1][1], rows[1][2]))
-                                )
+                                 PAYOUTS.get((rows[1][1], rows[1][2]))
+                                 )
         if not payout:
             # Still nothing. Let's check for 3 generic same symbols
             # or 2 consecutive symbols
@@ -429,26 +439,34 @@ class Bank:
                            "".format(credits))
         dataIO.save_json(self.file_path, self.settings)
 
-    # What would I ever do without stackoverflow?
-    def display_time(self, seconds, granularity=2):
-        intervals = (  # Source: http://stackoverflow.com/a/24542445
-            ('weeks', 604800),  # 60 * 60 * 24 * 7
-            ('days', 86400),    # 60 * 60 * 24
-            ('hours', 3600),    # 60 * 60
-            ('minutes', 60),
-            ('seconds', 1),
-        )
 
-        result = []
 
-        for name, count in intervals:
-            value = seconds // count
-            if value:
-                seconds -= value * count
-                if value == 1:
-                    name = name.rstrip('s')
-                result.append("{} {}".format(value, name))
-        return ', '.join(result[:granularity])
+def create_folder_if_none(folder_path):
+    if not os.path.exists(folder_path):
+        print("Creating {} folder...".format(folder_path))
+        os.makedirs(folder_path)
+
+
+def create_file_if_none(file_path):
+    if not dataIO.is_valid_json(file_path):
+        print("Creating default {}...".format(file_path))
+        dataIO.save_json(file_path, {})
+
+
+def create_logging(log_name, log_directory, log_file):
+    global logger
+    logger = logging.getLogger(log_name)
+    create_folder_if_none(log_directory)
+    log_file_path = log_directory + "/" + log_file
+    create_file_if_none(log_file_path)
+    if logger.level == 0:
+        # Prevents the logger from being loaded again in case of module reload
+        logger.setLevel(logging.INFO)
+        handler = logging.FileHandler(filename=log_file_path,
+                                      encoding='utf-8', mode='a')
+        handler.setFormatter(logging.Formatter('%(asctime)s %(message)s',
+                                               datefmt="[%d/%m/%Y %H:%M]"))
+        logger.addHandler(handler)
 
 
 def check_folders():
@@ -458,7 +476,6 @@ def check_folders():
 
 
 def check_files():
-
     f = "data/economy/settings.json"
     if not dataIO.is_valid_json(f):
         print("Creating default economy's settings.json...")
@@ -468,30 +485,10 @@ def check_files():
     if not dataIO.is_valid_json(f):
         print("Creating empty bank.json...")
         dataIO.save_json(f, {})
-def setup_logger()
-    global logger
-    check_folders()
-    check_files()
-    logger = logging.getLogger("red.economy")
-    if logger.level == 0:
-        # Prevents the logger from being loaded again in case of module reload
-        logger.setLevel(logging.INFO)
-        handler = logging.FileHandler(
-            filename='data/economy/economy.log', encoding='utf-8', mode='a')
-        handler.setFormatter(logging.Formatter(
-            '%(asctime)s %(message)s', datefmt="[%d/%m/%Y %H:%M]"))
-        logger.addHandler(handler)
+
+
 def setup(bot):
-    global logger
     check_folders()
     check_files()
-    logger = logging.getLogger("red.economy")
-    if logger.level == 0:
-        # Prevents the logger from being loaded again in case of module reload
-        logger.setLevel(logging.INFO)
-        handler = logging.FileHandler(
-            filename='data/economy/economy.log', encoding='utf-8', mode='a')
-        handler.setFormatter(logging.Formatter(
-            '%(asctime)s %(message)s', datefmt="[%d/%m/%Y %H:%M]"))
-        logger.addHandler(handler)
+    create_logging("red.bank", "data/bank", "bank.log")
     bot.add_cog(Economy(bot))

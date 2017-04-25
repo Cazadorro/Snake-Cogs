@@ -9,7 +9,7 @@ from __main__ import send_cmd_help
 from .utils import checks
 import logging
 import os
-
+import asyncio
 
 description = "What're ya buyin', PEN ISLAND traveler?"
 
@@ -30,6 +30,23 @@ class TestBot:
         """Registers an inventory with the Armorsmith."""
         author = ctx.message.author
         await self.bot.say("test message")
+
+    @commands.command(pass_context=True, no_pm=True, name='get_in_here')
+    async def get_in_here(self, ctx: commands.Context):
+        author = ctx.message.author
+        server = ctx.message.server
+        voice_channel = author.voice_channel
+        if self.bot.get_channel(server.id) is None or self.bot.get_channel(
+                server.id) is not voice_channel:
+            try:
+                voice_client = self.bot.join_voice_channel(voice_channel)
+                self.bot.say(repr(voice_client.socket))
+                # await asyncio.wait_for(
+                #     self.bot.join_voice_channel(voice_channel), timeout=5,
+                #     loop=self.bot.loop)
+            except asyncio.futures.TimeoutError as e:
+                raise ConnectionError(
+                    "Error connecting to voice channel; " + e)
 
 
 
