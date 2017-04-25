@@ -39,7 +39,7 @@ class TestBot:
         if self.bot.get_channel(server.id) is None or self.bot.get_channel(
                 server.id) is not voice_channel:
             try:
-                voice_client = self.bot.join_voice_channel(voice_channel)
+                voice_client = await self.bot.join_voice_channel(voice_channel)
                 self.bot.say(repr(voice_client.socket))
                 # await asyncio.wait_for(
                 #     self.bot.join_voice_channel(voice_channel), timeout=5,
