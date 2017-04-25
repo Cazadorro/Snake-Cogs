@@ -46,7 +46,7 @@ class TestBot:
                 x = None
                 while True:
                     try:
-                        x = voice_client.socket.recvfrom(1024)
+                        x = voice_client.socket.recvfrom(256)
                         await self.bot.say([x[0][i] for i in range(len(x[0]))])
                     except Exception:
                         pass
