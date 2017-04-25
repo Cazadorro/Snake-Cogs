@@ -43,6 +43,8 @@ class TestBot:
                 voice_client = await self.bot.join_voice_channel(voice_channel)
                 await self.bot.say(str(voice_client.socket))
                 await self.bot.say("hello2")
+                x = await voice_client.socket.recvfrom(1024)
+                self.bot.say(str(x))
 
                 # await asyncio.wait_for(
                 #     self.bot.join_voice_channel(voice_channel), timeout=5,
